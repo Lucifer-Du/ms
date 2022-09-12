@@ -1,7 +1,23 @@
-# Vue 3 + Vite
+# nvm
+download: http://nvm.uihtm.com/nvm1.1.9-setup.zip
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+``` bash
+# insatll node
+nvm install 16.17.0
+nvm use 16.17.0
+```
 
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
+# ms
+```bash
+# install
+npm install
+# run
+npm run dev
+```
+# ms\server
+```bash
+# install
+npm install
+# run
+node index.js
+```
