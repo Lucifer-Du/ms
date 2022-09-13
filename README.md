@@ -1,5 +1,5 @@
 # nvm
-download: http://nvm.uihtm.com/nvm1.1.9-setup.zip
+download: http://nvm.uihtm.com/nvm1.1.7-setup.zip
 
 ``` bash
 # insatll node

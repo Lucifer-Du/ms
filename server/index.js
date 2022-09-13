@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const app = express();
 const Articles = require('./database').Articles;
+const Users = require('./database_user').Users;
 
 app.use(cors());
 // 使用body-parser,支持编码为json的请求体
@@ -35,6 +36,13 @@ app.post('/articles', (req, res, next) => {
         res.send('添加成功')
     });
 });
+
+app.get('/users', (req, res, next) => {
+    Users.all((err, users) => {
+        if (err) return next(err);
+        res.send(users)
+    })
+})
 
 app.listen(port, () => {
     console.log(`server susscess localhost:${port}`)
