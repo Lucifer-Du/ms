@@ -2,7 +2,7 @@
     <Card>
         <Form>
             <FormItem>
-                <Button type="primary" @click="toAdd">新增</Button>
+                <Button class="operate" type="primary" @click="toAdd">新增</Button>
             </FormItem>
         </Form>
         <Table :data="tables" :columns="columns" border>
@@ -24,6 +24,7 @@
 </template>
 
 <script>
+import { markRaw } from 'vue';
 import { get, post } from '@/utils/http';
 import editForm from './edit.vue';
 
@@ -32,9 +33,10 @@ export default {
         return {
             tables: [],
             columns: [
-                { title: '分组名称', key: 'name', align: 'center' },
-                { title: '分组角色', key: 'role', align: 'center' },
-                { title: '操作', slot: 'operate', align: 'center' }
+                // { title: '学科编号', key: 'id', align: 'center' },
+                { title: '学科名称', key: 'course_name', align: 'center' },
+                { title: '学科教师', key: 'user_name', align: 'center' },
+                { title: '操作', slot: 'operate', align: 'center', width: 140 }
             ],
             page: {
                 current: 1,
@@ -57,10 +59,22 @@ export default {
     },
     methods: {
         getTableData() {
-            get('/api/user_group/list', {}).then(res => {
-                const { code, data } = res;
+            let params = {
+                page: this.page.current,
+                page_size: this.page.size
+            };
+
+            get('/api/course/list', params).then(res => {
+                const { code, data = {} } = res;
                 if (code === 1) {
-                    this.tables = data;
+                    const { list = [], total = 0 } = data;
+                    this.tables = list;
+                    this.page.total = total;
+                } else {
+                    this.$Notice.error({
+                        title: '错误信息',
+                        desc: res.msg
+                    });
                 }
             });
         },
@@ -77,8 +91,8 @@ export default {
                 visible: true,
                 title: '新增',
                 okText: '提交',
-                ref: 'user-group-add',
-                component: editForm
+                ref: 'course-add',
+                component: markRaw(editForm)
             });
         },
         toEdit(item) {
@@ -86,10 +100,10 @@ export default {
                 visible: true,
                 title: `编辑`,
                 okText: '提交',
-                ref: 'user-group-edit',
-                component: editForm,
+                ref: 'course-edit',
+                component: markRaw(editForm),
                 props: {
-                    id: item.id
+                    id: item.course_id
                 }
             });
         },
@@ -111,15 +125,20 @@ export default {
 
                 let method = ''
                 if (formData.id) {
-                    method = '/api/user_group/edit';
+                    method = '/api/course/edit';
                 } else {
-                    method = '/api/user_group/add';
+                    method = '/api/course/add';
                 }
 
                 post(method, formData).then(res => {
                     const { code } = res;
                     if (code === 1) {
                         this.handleCancel();
+                    } else {
+                        this.$Notice.error({
+                            title: '错误信息',
+                            desc: res.msg
+                        });
                     }
                 });
             }
@@ -129,7 +148,7 @@ export default {
                 title: '删除提醒',
                 content: `是否删除${item.name}`,
                 onOk: () => {
-                    post('/api/user_group/delete', {
+                    post('/api/course/delete', {
                         id: item.id
                     }).then(res => {
                         const { code } = res;
@@ -140,7 +159,10 @@ export default {
                             });
                             this.getTableData();
                         } else {
-                            // this.codeApi.getMsg(res);
+                            this.$Notice.error({
+                                title: '错误信息',
+                                desc: res.msg
+                            });
                         }
                     });
                 },

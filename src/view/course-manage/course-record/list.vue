@@ -1,17 +1,11 @@
 <template>
     <Card>
         <Form :model="search" inline :label-width="80" label-colon>
-            <FormItem label="用户名">
-                <Input class="form-input" v-model="search.user_name" placeholder="请填写" clearable />
-            </FormItem>
-            <FormItem label="用户账号">
+            <FormItem label="学名">
                 <Input class="form-input" v-model="search.account" placeholder="请填写" clearable />
             </FormItem>
-            <FormItem label="用户身份">
-                <Select class="form-input" v-model="search.access_id">
-                    <Option :value="0">全部</Option>
-                    <Option v-for="access in user_access" :key="access.access_id" :value="access.access_id">{{ access.access_name }}</Option>
-                </Select>
+            <FormItem label="姓名">
+                <Input class="form-input" v-model="search.user_name" placeholder="请填写" clearable />
             </FormItem>
             <FormItem>
                 <Button class="operate" type="primary" @click="getTableData">搜索</Button>
@@ -39,23 +33,17 @@
 <script>
 import { markRaw } from 'vue';
 import { get, post } from '@/utils/http';
-import editForm from './edit.vue';
+import editForm from "./edit.vue";
 
 export default {
     data() {
         return {
             search: {
-                user_name: '',
                 account: '',
-                access_id: 0
+                user_name: ''
             },
             tables: [],
-            columns: [
-                { title: '用户名', key: 'user_name', align: 'center' },
-                { title: '用户账号', key: 'account', align: 'center' },
-                { title: '用户身份', key: 'access_name', align: 'center' },
-                { title: '操作', slot: 'operate', align: 'center', width: 140 }
-            ],
+            course_list: [],
             page: {
                 current: 1,
                 total: 0,
@@ -69,23 +57,38 @@ export default {
                 ref: null,
                 component: null,
                 props: {},
-            },
-            user_access: []
+            }
         }
     },
-    created() {
-        this.getUserAccess();
+    computed: {
+        columns() {
+            const list = [
+                { title: '学号', key: 'account', align: 'center', minWidth: 100 },
+                { title: '姓名', key: 'user_name', align: 'center', minWidth: 100 },
+                { title: '总分', key: 'total', align: 'center', minWidth: 100 },
+                { title: '平均分', key: 'average', align: 'center', minWidth: 100 },
+                { title: '排名', key: 'rank', align: 'center', minWidth: 100 },
+                { title: '操作', slot: 'operate', align: 'center', width: 140, fixed: 'right' }
+            ];
+            this.course_list.forEach(item => {
+                list.splice(2, 0, { title: item.course_name, key: `course_${item.course_id}`, align: 'center', minWidth: 100 });
+            });
+            return list;
+        }
+    },
+    async created() {
+        await this.getCourseList();
     },
     mounted() {
         this.getTableData();
     },
     methods: {
-        getUserAccess() {
-            get('/api/access/list', {}).then(res => {
-                const { code, data } = res;
+        async getCourseList() {
+            await get('/api/course/list', {}).then(res => {
+                const { code, data = {} } = res;
                 if (code === 1) {
                     const { list = [] } = data;
-                    this.user_access = list;
+                    this.course_list = list;
                 } else {
                     this.$Notice.error({
                         title: '错误信息',
@@ -100,18 +103,12 @@ export default {
                 page_size: this.page.size
             };
             Object.keys(this.search).forEach(key => {
-                if (key === 'access_id') {
-                    if (Number(this.search[key]) !== 0) {
-                        params[key] = this.search[key];
-                    }
-                } else {
-                    if (this.search[key] !== '') {
-                        params[key] = this.search[key];
-                    }
+                if (this.search[key] !== '') {
+                    params[key] = this.search[key];
                 }
             });
 
-            get('/api/user/list', params).then(res => {
+            get('/api/record/list', params).then(res => {
                 const { code, data = {} } = res;
                 if (code === 1) {
                     const { list = [], total } = data;
@@ -138,7 +135,7 @@ export default {
                 visible: true,
                 title: '新增',
                 okText: '提交',
-                ref: 'user-group-add',
+                ref: 'user-record-add',
                 component: markRaw(editForm)
             });
         },
@@ -147,7 +144,7 @@ export default {
                 visible: true,
                 title: `编辑`,
                 okText: '提交',
-                ref: 'user-group-edit',
+                ref: 'user-record-edit',
                 component: markRaw(editForm),
                 props: {
                     id: item.user_id
@@ -169,12 +166,11 @@ export default {
         async handleConfirm() {
             if (typeof this.$refs[this.modal.ref].beforeSubmit === 'function') {
                 const formData = await this.$refs[this.modal.ref].beforeSubmit();
-
                 let method = ''
-                if (this.modal.type === 'user-group-edit') {
-                    method = '/api/user/edit';
+                if (this.modal.ref === 'user-record-add') {
+                    method = '/api/record/add';
                 } else {
-                    method = '/api/user/add';
+                    method = '/api/record/edit';
                 }
 
                 post(method, formData).then(res => {
@@ -195,7 +191,7 @@ export default {
                 title: '删除提醒',
                 content: `是否删除${item.user_name}`,
                 onOk: () => {
-                    post('/api/user/delete', {
+                    post('/api/record/delete', {
                         id: item.user_id
                     }).then(res => {
                         const { code } = res;
@@ -218,9 +214,3 @@ export default {
     }
 }
 </script>
-
-<style lang="scss" scoped>
-.form-input {
-    width: 180px;
-}
-</style>

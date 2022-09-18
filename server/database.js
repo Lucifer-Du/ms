@@ -1,7 +1,11 @@
-const user_group = require('./database/user_group');
-const user_list = require('./database/user_list');
+const user = require('./database/user');
+const access = require('./database/access');
+const course = require('./database/course');
+const record = require('./database/record');
 
 module.exports = {
-    user_group,
-    user_list
+    user,
+    access,
+    course,
+    record
 };
