@@ -1,6 +1,6 @@
 # Node安装
 官网：https://nvm.uihtm.com/
-下载: http://nvm.uihtm.com/nvm1.1.7-setup.zip
+下载: http://nvm.uihtm.com/nvm1.1.9-setup.zip
 ```bash
 # insatll
 nvm install 16.17.1

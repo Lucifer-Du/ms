@@ -2,7 +2,7 @@
     <div class="login">
         <div class="login-con">
             <Card title="欢迎登录">
-                <Form ref="login" :model="formData" :rules="rules" @keydown.enter.native="handleSubmit">
+                <Form ref="login" :model="formData" :rules="rules" @keydown.enter.native="handleLogin">
                     <FormItem prop="account">
                         <Input v-model="formData.account" placeholder="请填写用户名" prefix="ios-person" />
                     </FormItem>

@@ -13,10 +13,8 @@
                     <Option v-for="access in user_access" :key="access.access_id" :value="access.access_id">{{ access.access_name }}</Option>
                 </Select>
             </FormItem>
-            <FormItem>
-                <Button class="operate" type="primary" @click="getTableData">搜索</Button>
-                <Button class="operate" type="primary" @click="toAdd">新增</Button>
-            </FormItem>
+            <Button class="operate" type="primary" @click="getTableData">搜索</Button>
+            <Button class="operate" type="primary" @click="toAdd">新增</Button>
         </Form>
         <Table :data="tables" :columns="columns" border>
             <template #operate="{ row }">
@@ -51,10 +49,10 @@ export default {
             },
             tables: [],
             columns: [
-                { title: '用户名', key: 'user_name', align: 'center' },
-                { title: '用户账号', key: 'account', align: 'center' },
-                { title: '用户身份', key: 'access_name', align: 'center' },
-                { title: '操作', slot: 'operate', align: 'center', width: 140 }
+                { title: '用户名', key: 'user_name', minWidth: 100, align: 'center' },
+                { title: '用户账号', key: 'account', minWidth: 100, align: 'center' },
+                { title: '用户身份', key: 'access_name', minWidth: 100, align: 'center' },
+                { title: '操作', slot: 'operate', width: 140, align: 'center' }
             ],
             page: {
                 current: 1,

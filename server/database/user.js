@@ -56,14 +56,12 @@ class user {
             `;
         }
         const db_select = new Promise((resolve, reject) => {
-            // console.log(select)
             db.all(`${select};`, (err, res) => {
                 if (err) reject(err)
                 resolve(res)
             });
         });
         const db_total = new Promise((resolve, reject) => {
-            // console.log(total)
             db.all(`${total};`, (err, res = []) => {
                 if (err) reject(err)
                 const [data = {}] = res;
@@ -85,7 +83,6 @@ class user {
     static create(data, callback) {
         const { user_name = null, account = null, password = null, access_id = null } = data;
         const sql = `INSERT INTO USER (user_name, account, password, access_id) VALUES ('${user_name}', '${account}', '${password}', ${access_id});`;
-        // console.log(sql)
         db.run(sql, callback);
     }
     // 根据id 获取数据
@@ -146,19 +143,43 @@ class user {
                 db.all(sql, callback);
                 break;
             case 'student':
-                sql = `
-                    SELECT
-                        ( SELECT COURSE.course_name FROM COURSE WHERE COURSE.course_id = r.course_id ) AS course_name,
-                        r.course_record,
-                        ( SELECT USER.user_name FROM USER WHERE USER.user_id = r.user_id ) AS user_name 
-                    FROM
-                        RECORD r
-                        JOIN USER u ON u.user_id = r.user_id
-                        JOIN COURSE c ON c.course_id = r.course_id 
-                    WHERE
-                        u.user_id = ${user_id};
-                `;
-                db.all(sql, callback);
+                db.all('SELECT course_id FROM COURSE', (err, list = []) => {
+                    if (err) return callback(err, {});
+                    let select = `
+                        SELECT
+                            u.user_id,
+                    `;
+                    list.forEach(item => {
+                        const [course_id] = Object.values(item);
+                        select += `
+                            MAX( CASE r.course_id WHEN ${course_id} THEN r.course_record ELSE '' END ) course_${course_id},
+                        `;
+                    });
+                    select += `
+                            SUM( r.course_record ) sum,
+                            ROUND( AVG( r.course_record ), 2) avg
+                        FROM
+                            RECORD r
+                            JOIN USER u ON u.user_id = r.user_id 
+                        GROUP BY
+                            r.user_id
+                    `;
+                    const sql = `
+                        SELECT
+                            rank.*
+                        FROM
+                            (
+                                SELECT
+                                    ROW_NUMBER() OVER ( ORDER BY list.sum DESC ) AS rank,
+                                    list.* 
+                                FROM
+                                    (${select}) list
+                            ) rank
+                        WHERE
+                            rank.user_id = ${user_id};
+                    `;
+                    db.get(sql, callback);
+                });
                 break;
         }
     }

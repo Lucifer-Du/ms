@@ -11,82 +11,100 @@ class record {
 
         db.all('SELECT course_id FROM COURSE', (err, list = []) => {
             if (err) return callback(err);
-            let select = `
-                SELECT
-                    u.account,
-                    u.user_id,
-                    u.user_name,
-            `;
-            list.forEach(item => {
-                const [course_id] = Object.values(item);
-                select += `
-                    MAX( CASE r.course_id WHEN ${course_id} THEN r.course_record ELSE '' END ) course_${course_id},
-                `;
-            });
-            select += `
-                    SUM( r.course_record ) total,
-                    CAST ( AVG( r.course_record * 1.0 ) AS DECIMAL ( 18, 2 ) ) average
-                FROM
-                    RECORD r
-                    JOIN USER u ON u.user_id = r.user_id 
-            `;
-            let total = `
-                SELECT u.user_id FROM RECORD r JOIN USER u ON u.user_id = r.user_id
-            `;
-            if (Object.keys(params).length > 0) {
-                select += 'WHERE '
-                total += 'WHERE ';
-                Object.keys(params).forEach((key, index) => {
-                    if (index > 0) {
-                        select += ' AND ';
-                        total += ' AND ';
-                    }
-                    switch(key) {
-                        case 'user_name':
-                        case 'account':
-                            select += `u.${key} LIKE '%${params[key]}%'`;
-                            total += `u.${key} LIKE '%${params[key]}%'`;
-                            break;
-                        default:
-                            select += `u.${key} = ${params[key]}`;
-                            total += `u.${key} = ${params[key]}`;
-                    }
-                });
-            }
-            select += `
-                GROUP BY
-                    r.user_id
-            `;
-            total += `
-                GROUP BY
-                    r.user_id
-            `;
-            if (page) {
-                select += `
-                    LIMIT ${page_size}
-                    OFFSET ${(page - 1) * page_size}
-                `;
-            }
+            
             const db_select = new Promise((resolve, reject) => {
-                const sql = `
+                let select = `
                     SELECT
-                        ROW_NUMBER() OVER ( ORDER BY list.total DESC ) AS rank,
-                        list.* 
-                    FROM (${select}) list;
+                        u.account,
+                        u.user_id,
+                        u.user_name,
                 `;
-                // console.log(sql)
+                list.forEach(item => {
+                    const [course_id] = Object.values(item);
+                    select += `
+                        MAX( CASE r.course_id WHEN ${course_id} THEN r.course_record ELSE '' END ) course_${course_id},
+                    `;
+                });
+                select += `
+                        SUM( r.course_record ) sum,
+                        ROUND( AVG( r.course_record ), 2) avg
+                    FROM
+                        RECORD r
+                        JOIN USER u ON u.user_id = r.user_id 
+                    GROUP BY
+                        r.user_id
+                `;
+                let sql = `
+                    SELECT
+                        rank.*
+                    FROM
+                        (
+                            SELECT
+                                ROW_NUMBER() OVER ( ORDER BY list.sum DESC ) AS rank,
+                                list.* 
+                            FROM (${select}) list
+                        ) rank
+                `;
+                if (Object.keys(params).length > 0) {
+                    sql += 'WHERE ';
+                    Object.keys(params).forEach((key, index) => {
+                        if (index > 0) {
+                            sql += ' AND ';
+                        }
+                        switch(key) {
+                            case 'user_name':
+                            case 'account':
+                                sql += `rank.${key} LIKE '%${params[key]}%'`;
+                                break;
+                            default:
+                                sql += `rank.${key} = ${params[key]}`;
+                        }
+                    });
+                }
+                if (page) {
+                    sql += `
+                        LIMIT ${page_size}
+                        OFFSET ${(page - 1) * page_size}
+                    `;
+                }
                 db.all(sql, (err, res) => {
                     if (err) reject(err)
                     resolve(res)
                 });
             });
             const db_total = new Promise((resolve, reject) => {
-                const sql = `
+                let total = `
+                    SELECT
+                        u.user_id,
+                        u.user_name,
+                        u.account
+                    FROM
+                        RECORD r
+                        JOIN USER u ON u.user_id = r.user_id
+                    GROUP BY
+                        r.user_id
+                `;
+                let sql = `
                     SELECT
                         COUNT(*) AS total
-                    FROM (${total}) list;
+                    FROM (${total}) list
                 `;
-                // console.log(sql)
+                if (Object.keys(params).length > 0) {
+                    sql += 'WHERE ';
+                    Object.keys(params).forEach((key, index) => {
+                        if (index > 0) {
+                            sql += ' AND ';
+                        }
+                        switch(key) {
+                            case 'user_name':
+                            case 'account':
+                                sql += `list.${key} LIKE '%${params[key]}%'`;
+                                break;
+                            default:
+                                sql += `list.${key} = ${params[key]}`;
+                        }
+                    });
+                }
                 db.all(`${sql};`, (err, res = []) => {
                     if (err) reject(err)
                     const [data = {}] = res;

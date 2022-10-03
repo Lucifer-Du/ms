@@ -1,16 +1,14 @@
 <template>
     <Card>
         <Form :model="search" inline :label-width="80" label-colon>
-            <FormItem label="学名">
+            <FormItem label="学号">
                 <Input class="form-input" v-model="search.account" placeholder="请填写" clearable />
             </FormItem>
             <FormItem label="姓名">
                 <Input class="form-input" v-model="search.user_name" placeholder="请填写" clearable />
             </FormItem>
-            <FormItem>
-                <Button class="operate" type="primary" @click="getTableData">搜索</Button>
-                <Button class="operate" type="primary" @click="toAdd">新增</Button>
-            </FormItem>
+            <Button class="operate" type="primary" @click="getTableData">搜索</Button>
+            <Button class="operate" type="primary" @click="toAdd">新增</Button>
         </Form>
         <Table :data="tables" :columns="columns" border>
             <template #operate="{ row }">
@@ -63,15 +61,33 @@ export default {
     computed: {
         columns() {
             const list = [
-                { title: '学号', key: 'account', align: 'center', minWidth: 100 },
-                { title: '姓名', key: 'user_name', align: 'center', minWidth: 100 },
-                { title: '总分', key: 'total', align: 'center', minWidth: 100 },
-                { title: '平均分', key: 'average', align: 'center', minWidth: 100 },
-                { title: '排名', key: 'rank', align: 'center', minWidth: 100 },
+                { title: '学号', key: 'account', minWidth: 100, align: 'center' },
+                { title: '姓名', key: 'user_name', minWidth: 100, align: 'center' },
+                { title: '总分', key: 'sum', minWidth: 100, align: 'center' },
+                { title: '平均分', key: 'avg', minWidth: 100, align: 'center' },
+                { title: '名次', key: 'rank', minWidth: 100, align: 'center' },
                 { title: '操作', slot: 'operate', align: 'center', width: 140, fixed: 'right' }
             ];
             this.course_list.forEach(item => {
-                list.splice(2, 0, { title: item.course_name, key: `course_${item.course_id}`, align: 'center', minWidth: 100 });
+                const row = {
+                    title: item.course_name,
+                    key: `course_${item.course_id}`,
+                    minWidth: 100,
+                    align: 'center',
+                    render: (h, params) => {
+                        const value = params.row[`course_${item.course_id}`];
+                        let style = {};
+                        if (value >= 60) {
+                            style.color = '#19be6b';
+                        } else {
+                            style.color = '#ed4014';
+                        }
+                        return h('div', {
+                            style
+                        }, value);
+                    }
+                };
+                list.splice(2, 0, row);
             });
             return list;
         }
@@ -214,3 +230,9 @@ export default {
     }
 }
 </script>
+
+<style lang="scss" scoped>
+.form-input {
+    width: 180px;
+}
+</style>

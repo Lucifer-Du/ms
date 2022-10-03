@@ -10,8 +10,8 @@ import 'view-ui-plus/dist/styles/viewuiplus.css';
 const app = createApp(App);
 
 // app.provide('$axios', axios);
-app.provide('$router', router);
-app.provide('$cookies', VueCookies);
+// app.provide('$router', router);
+// app.provide('$cookies', VueCookies);
 
 app.use(store);
 app.use(router);

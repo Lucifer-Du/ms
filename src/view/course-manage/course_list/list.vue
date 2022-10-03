@@ -33,10 +33,10 @@ export default {
         return {
             tables: [],
             columns: [
-                // { title: '学科编号', key: 'id', align: 'center' },
-                { title: '学科名称', key: 'course_name', align: 'center' },
-                { title: '学科教师', key: 'user_name', align: 'center' },
-                { title: '操作', slot: 'operate', align: 'center', width: 140 }
+                // { title: '学科编号', key: 'id', minWidth: 100, align: 'center' },
+                { title: '学科名称', key: 'course_name', minWidth: 100, align: 'center' },
+                { title: '学科教师', key: 'user_name', minWidth: 100, align: 'center' },
+                { title: '操作', slot: 'operate', width: 140, align: 'center' }
             ],
             page: {
                 current: 1,

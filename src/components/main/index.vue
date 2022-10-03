@@ -112,7 +112,8 @@ export default {
 }
 
 :deep(.layout-content) {
-    margin: 16px;
+    padding: 16px;
+    height: 100%;
 }
 
 :deep(.operate) {
