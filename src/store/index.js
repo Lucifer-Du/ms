@@ -1,4 +1,5 @@
-import { createStore } from "vueX";
+import { createStore } from "vuex";
+// import app from './modules/app';
 import user from './modules/user';
 
 const store = createStore({
@@ -7,7 +8,8 @@ const store = createStore({
 	mutations: {},
 	actions: {},
 	modules: {
-		// user
+		// app,
+		user
 	}
 });
 

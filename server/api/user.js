@@ -2,6 +2,28 @@ const express = require('express');
 const router = express.Router();
 const user = require('../database/user');
 
+router.post('/login', (request, response, next) => {
+    const { account = '', password = '' } = request.body;
+    user.query_account({
+        account
+    }, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        if (data) {
+            if (data.password == password) {
+                const { user_id, user_name, access } = data;
+                response.send({ code: 1, data: { user_id, user_name, access } });
+            } else {
+                response.send({ code: -1, msg: '密码错误'});
+            }
+        } else {
+            response.send({ code: -1, msg: '用户不存在'});
+        }
+    });
+});
+
 router.get('/list', (req, res, next) => {
     user.all(req.query, (err, data) => {
         res.send({

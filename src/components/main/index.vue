@@ -50,6 +50,7 @@
 
 <script>
 import { routes } from '@/router';
+import { mapActions } from 'vuex';
 
 export default {
     data() {
@@ -75,13 +76,11 @@ export default {
 
     },
     methods: {
+        ...mapActions('user', ['handleLogout']),
         handleClick(name) {
             switch(name) {
                 case 'logout':
-                    this.$cookies.remove('user');
-                    this.$router.push({
-                        name: 'login'
-                    });
+                    this.handleLogout();
                     break;
             }
         }

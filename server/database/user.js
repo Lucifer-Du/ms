@@ -5,6 +5,22 @@ const dbname = 'mysqlite';
 const db = new sqlite3.Database(dbname);
 
 class user {
+    // 查找用户账号
+    static query_account({ account }, callback) {
+        const sql = `
+            SELECT
+                u.user_id,
+                u.user_name,
+                u.password, 
+                a.access 
+            FROM
+                USER u
+                JOIN ACCESS a ON a.access_id = u.access_id
+            WHERE
+                u.account = '${account}'
+        `;
+        db.get(sql, callback);
+    }
     // 查询 分页 条件
     static all(data, callback) {
         const { page = 1, page_size = 10, ...params } = data;
@@ -104,23 +120,6 @@ class user {
         if (!id) return callback(new Error(`缺少参数id`));
         const sql = `DELETE FROM USER WHERE user_id = ${id};`;
         db.run(sql, callback)
-    }
-    // 查找用户账号
-    static query_account(data, callback) {
-        const { account = null } = data;
-        const sql = `
-            SELECT
-                u.user_id,
-                u.user_name,
-                u.password, 
-                a.access 
-            FROM
-                USER u
-                JOIN ACCESS a ON a.access_id = u.access_id
-            WHERE
-                u.account = '${account}'
-        `;
-        db.get(sql, callback);
     }
     // 查询用户相关信息
     static query_userinfo(data, callback) {

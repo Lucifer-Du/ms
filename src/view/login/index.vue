@@ -2,7 +2,7 @@
     <div class="login">
         <div class="login-con">
             <Card title="欢迎登录">
-                <Form ref="login" :model="formData" :rules="rules" @keydown.enter.native="handleLogin">
+                <Form ref="login-form" :model="formData" :rules="rules" @keydown.enter.native="login">
                     <FormItem prop="account">
                         <Input v-model="formData.account" placeholder="请填写用户名" prefix="ios-person" />
                     </FormItem>
@@ -10,7 +10,7 @@
                         <Input type="password" v-model="formData.password" placeholder="请填写密码" password prefix="md-lock" />
                     </FormItem>
                     <FormItem>
-                        <Button type="primary" long @click="handleLogin">登录</Button>
+                        <Button type="primary" long @click="login">登录</Button>
                     </FormItem>
                 </Form>
             </Card>
@@ -19,7 +19,7 @@
 </template>
 
 <script>
-import { post } from '@/utils/http';
+import { mapActions } from 'vuex';
 
 export default {
     data() {
@@ -40,55 +40,19 @@ export default {
         }
     },
     methods: {
+        ...mapActions('user', ['handleLogin']),
         beforeSubmit() {
             return new Promise((resolve) => {
-                this.$refs['login'].validate((valid) => {
+                this.$refs['login-form'].validate((valid) => {
                     if (valid) {
                         resolve(this.formData);
                     }
                 });
             });
         },
-        async handleLogin() {
+        login: async function() {
             const formData = await this.beforeSubmit();
-            const { account } = formData;
-            post('/api/user/query_account', {
-                account
-            }).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    if (Object.keys(data).length > 0) {
-                        const { user_id, user_name, password, access } = data;
-                        if (formData.password === password) {
-                            this.$cookies.set('user', {
-                                user_id,
-                                user_name,
-                                access,
-                                account
-                            });
-
-                            this.$router.push({
-                                name: 'home'
-                            });
-                        } else {
-                            this.$Notice.error({
-                                title: '错误信息',
-                                desc: '密码不正确'
-                            });
-                        }
-                    } else {
-                        this.$Notice.error({
-                            title: '错误信息',
-                            desc: '用户名不存在'
-                        });
-                    }
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
-            });
+            this.handleLogin(formData);
         }
     }
 }
