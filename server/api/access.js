@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const access = require('../database/access');
 
-router.get('/list', (req, res, next) => {
-    access.all(req.query, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            data,
-            msg: err ? err.message : ''
-        });
+router.get('/list', (request, response, next) => {
+    access.all(request.query, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1, data });
     });
 });
 

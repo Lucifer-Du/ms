@@ -8,9 +8,7 @@ const ACCESS = 'access';
 
 class access {
     // 查询 分页 条件
-    static all(data, callback) {
-        const { page = 1, page_size = 10, ...params } = data;
-
+    static all({ page = 1, page_size = 10, ...params }, callback) {
         let select = `
             SELECT
                 *

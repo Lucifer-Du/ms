@@ -69,7 +69,7 @@ export default {
             return name;
         },
         user() {
-            return this.$cookies.get('user');
+            return this.$cookies.get('user_info');
         }
     },
     created() {

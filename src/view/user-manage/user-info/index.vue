@@ -126,7 +126,7 @@ export default {
     },
     computed: {
         user() {
-            return this.$cookies.get("user");
+            return this.$cookies.get("user_info");
         },
         card_title() {
             const { access } = this.user;

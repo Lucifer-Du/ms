@@ -23,7 +23,7 @@ class user {
     }
     // 查询 分页 条件
     static all(data, callback) {
-        const { page = 1, page_size = 10, ...params } = data;
+        const { page = 1, page_size = 10, access = '', ...params } = data;
 
         let select = `
             SELECT
@@ -31,15 +31,16 @@ class user {
                 u.user_name,
                 u.account,
                 u.password,
+                a.access,
                 a.access_name 
             FROM
                 USER u
                 JOIN ACCESS a ON a.access_id = u.access_id
             WHERE
-                u.user_id != 1
+                u.access_id != 1
         `;
         let total = `
-            SELECT COUNT(*) total FROM USER u WHERE u.user_id != 1
+            SELECT COUNT(*) total FROM USER u WHERE u.access_id != 1
         `;
         if (Object.keys(params).length > 0) {
             // select += 'WHERE '

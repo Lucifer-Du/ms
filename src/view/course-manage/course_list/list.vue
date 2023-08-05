@@ -27,6 +27,7 @@
 import { markRaw } from 'vue';
 import { get, post } from '@/utils/http';
 import editForm from './edit.vue';
+import { mapActions } from 'vuex';
 
 export default {
     data() {
@@ -58,25 +59,19 @@ export default {
         this.getTableData();
     },
     methods: {
-        getTableData() {
+        ...mapActions('app', ['handleCourseList']),
+        getTableData: async function() {
             let params = {
                 page: this.page.current,
                 page_size: this.page.size
             };
 
-            get('/api/course/list', params).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    const { list = [], total = 0 } = data;
-                    this.tables = list;
-                    this.page.total = total;
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
-            });
+            const { user_id } = this.$cookies.get('user_info') || {};
+            params.user_id = user_id;
+
+            const { list = [], total } = await this.handleCourseList(params);
+            this.tables = list;
+            this.page.total = total;
         },
         changePage(page) {
             Object.assign(this.page, { current: page });

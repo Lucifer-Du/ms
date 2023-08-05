@@ -10,7 +10,9 @@
             <FormItem label="用户身份">
                 <Select class="form-input" v-model="search.access_id">
                     <Option :value="0">全部</Option>
-                    <Option v-for="access in user_access" :key="access.access_id" :value="access.access_id">{{ access.access_name }}</Option>
+                    <template v-for="access in access_list" :key="access.access_id">
+                        <Option :value="access.access_id">{{ access.access_name }}</Option>
+                    </template>
                 </Select>
             </FormItem>
             <Button class="operate" type="primary" @click="getTableData">搜索</Button>
@@ -38,6 +40,7 @@
 import { markRaw } from 'vue';
 import { get, post } from '@/utils/http';
 import editForm from './edit.vue';
+import { mapActions } from 'vuex';
 
 export default {
     data() {
@@ -68,31 +71,22 @@ export default {
                 component: null,
                 props: {},
             },
-            user_access: []
+            access_list: []
         }
     },
     created() {
-        this.getUserAccess();
+        this.getAccessList();
     },
     mounted() {
         this.getTableData();
     },
     methods: {
-        getUserAccess() {
-            get('/api/access/list', {}).then(res => {
-                const { code, data } = res;
-                if (code === 1) {
-                    const { list = [] } = data;
-                    this.user_access = list;
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
-            });
+        ...mapActions('app', ['handleAccessList', 'handleUserList']),
+        getAccessList: async function() {
+            const { list = [] } = await this.handleAccessList();
+            this.access_list = list;
         },
-        getTableData() {
+        getTableData: async function() {
             let params = {
                 page: this.page.current,
                 page_size: this.page.size
@@ -109,19 +103,10 @@ export default {
                 }
             });
 
-            get('/api/user/list', params).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    const { list = [], total } = data;
-                    this.tables = list;
-                    this.page.total = total;
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
-            });
+            const { list = [], total = 0 } = await this.handleUserList(params);
+            const { access } = this.$cookies.get('user_info') || {};
+            this.tables = list.filter(item => item.access !== access);
+            this.page.total = total;
         },
         changePage(page) {
             Object.assign(this.page, { current: page });

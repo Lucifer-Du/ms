@@ -1,6 +1,6 @@
 import { get, post } from '@/utils/http';
-import VueCookies from 'vue-cookies';
 import { Notice } from 'view-ui-plus';
+import VueCookies from 'vue-cookies';
 import router from '@/router';
 
 const user = {
@@ -18,16 +18,16 @@ const user = {
         }
     },
     actions: {
-        setState({ commit }, object) {
-            commit('SET_STATE', object);
-        },
+        // setState({ commit }, object) {
+        //     commit('SET_STATE', object);
+        // },
         handleLogin({ dispatch }, { account = '', password = '' }) {
             post('/api/user/login', {
                 account, password
             }).then(res => {
                 const { code = 1, data = {}, msg = '' } = res;
                 if (code == 1) {
-                    VueCookies.set('user', data);
+                    VueCookies.set('user_info', data);
                     router.push({ name: 'home' });
                 } else {
                     Notice.error({
@@ -38,9 +38,10 @@ const user = {
             });
         },
         handleLogout({ dispatch }) {
-            VueCookies.remove('user');
+            VueCookies.remove('user_info');
             router.push({ name: 'login' });
-        }
+        },
+        
     },
 };
 
