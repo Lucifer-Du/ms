@@ -66,8 +66,10 @@ export default {
                 page_size: this.page.size
             };
 
-            const { user_id } = this.$cookies.get('user_info') || {};
-            params.user_id = user_id;
+            const { user_id, access_id } = this.$cookies.get('user_info') || {};
+            if (access_id != 1) {
+                params.user_id = user_id;
+            }
 
             const { list = [], total } = await this.handleQueryData({
                 method: '/api/course/list',
