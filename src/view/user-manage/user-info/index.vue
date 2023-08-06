@@ -35,7 +35,7 @@
         </Card>
         <Card class="section" :title="card_title">
             <template v-if="list.length > 0">
-                <template v-if="user.access === 'student'">
+                <template v-if="user.access_id == 3">
                     <Space style="margin-bottom: 16px" size="large" split type="flex">
                         <span>总分: {{ total }}</span>
                         <span>平均分: {{ average }}</span>
@@ -49,8 +49,8 @@
                 </template>
                 <template v-else>
                     <DescriptionList v-for="(item, ci) in list" :key="ci" :title="item.course_name">
-                        <Description v-for="(student, si) in item.data" :key="si" term="学生：">
-                            {{ student.user_name }}， {{ student.course_record }}
+                        <Description v-for="(student, si) in item.data" :key="si" :term="student.user_name + '：'">
+                            {{ student.course_record }}
                         </Description>
                     </DescriptionList>
                 </template>
@@ -66,6 +66,7 @@
 
 <script>
 import { post, get } from '@/utils/http';
+import { mapActions } from 'vuex';
 
 export default {
     data() {
@@ -144,11 +145,12 @@ export default {
     },
     created() {
         this.query_userinfo();
-        this.queryData();
     },
     mounted() {
+        this.queryData();
     },
     methods: {
+        ...mapActions('app', ['handleQueryData']),
         query_userinfo() {
             post("/api/user/query_account", {
                 account: this.user.account
@@ -157,6 +159,7 @@ export default {
                 if (code === 1) {
                     const { user_id, ...user_info } = data;
                     this.user_info = {
+                        ...this.$cookies.get('user_info'),
                         ...user_info,
                         id: user_id
                     };
@@ -190,6 +193,10 @@ export default {
                                 user_name: true,
                                 password: true
                             };
+                            this.$Notice.success({
+                                title: "成功信息",
+                                desc: '修改成功'
+                            });
                         }
                         else {
                             this.$Notice.error({
@@ -202,20 +209,11 @@ export default {
             });
         },
         queryCourse() {
-            return new Promise((resolve, reject) => {
-                get("/api/course/list", {}).then(res => {
-                    const { code, data = {} } = res;
-                    if (code === 1) {
-                        const { list = [], total = 0 } = data;
-                        resolve(list);
-                    }
-                    else {
-                        this.$Notice.error({
-                            title: "错误信息",
-                            desc: res.msg
-                        });
-                    }
+            return new Promise(async (resolve, reject) => {
+                const { list = [] } = await this.handleQueryData({
+                    method: '/api/course/list'
                 });
+                resolve(list);
             });
         },
         queryData() {
@@ -224,30 +222,21 @@ export default {
                 user_id,
                 access_id
             }).then(async (res) => {
-                const { code, data = [] } = res;
+                const { code, data } = res;
                 if (code === 1) {
-                    if (data.length <= 0)
-                        return false;
                     switch (access_id) {
                         case 3:
                             // student
                             const { user_id, total, average, rank, ...course } = data;
                             const course_list = await this.queryCourse();
                             this.list = Object.keys(course).reduce((pre, cur) => {
-                                if (course[cur] !== "") {
-                                    const course_record = course[cur];
-                                    const course_id = cur.split("_")[1];
-                                    const [item = {}] = course_list.filter(item => Number(item.course_id) === Number(course_id));
-                                    const { course_name = '' } = item;
-                                    pre.push({
-                                        course_name,
-                                        course_record
-                                    });
-                                }
+                                const course_id = cur.split("_")[1];
+                                const [item = {}] = course_list.filter(item => Number(item.course_id) === Number(course_id));
+                                pre.push({ course_name: item.course_name, course_record: course[cur] });
                                 return pre;
                             }, []);
                             this.total = total;
-                            this.average = average;
+                            this.average = Math.round(total / this.list.length * 100) / 100;
                             this.rank = rank;
                             break;
                         case 2:

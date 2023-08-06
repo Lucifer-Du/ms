@@ -153,8 +153,7 @@ class user {
                         `;
                     });
                     select += `
-                            SUM( r.course_record ) total,
-                            CAST ( AVG( r.course_record * 1.0 ) AS DECIMAL ( 18, 2 ) ) average
+                            SUM( r.course_record ) total
                         FROM
                             RECORD r
                             JOIN USER u ON u.user_id = r.user_id 

@@ -64,7 +64,15 @@ export default {
                 { title: '学号', key: 'account', minWidth: 100, align: 'center' },
                 { title: '姓名', key: 'user_name', minWidth: 100, align: 'center' },
                 { title: '总分', key: 'total', minWidth: 100, align: 'center' },
-                { title: '平均分', key: 'average', minWidth: 100, align: 'center' },
+                {
+                    title: '平均分',
+                    key: 'average',
+                    minWidth: 100,
+                    align: 'center',
+                    render: (h, params) => {
+                        return Math.round(params.row.total / this.course_list.length * 100) / 100
+                    }
+                },
                 { title: '名次', key: 'rank', minWidth: 100, align: 'center' },
                 { title: '操作', slot: 'operate', align: 'center', width: 140, fixed: 'right' }
             ];
