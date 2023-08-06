@@ -12,42 +12,53 @@ router.get('/list', (request, response, next) => {
     });
 });
 
-router.post('/add', (req, res, next) => {
-    access.create(req.body, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            msg: err ? err.message : ''
-        });
+router.post('/add', (request, response, next) => {
+    access.create(request.body, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1 });
     });
 });
 
-router.get('/detail', (req, res, next) => {
-    access.find(req.query.id, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            data,
-            msg: err ? err.message : ''
-        });
+router.get('/detail', (request, response, next) => {
+    const { id } = request.query;
+    if (!id) {
+        response.send({ code: -1, msg: '缺少参数id'});
+        return false;
+    }
+    access.find(id, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1, data });
     });
 });
 
-router.post('/edit', (req, res, next) => {
-    access.update(req.body, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            msg: err ? err.message : ''
-        });
+router.post('/edit', (request, response, next) => {
+    access.update(request.body, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1 });
     });
 });
 
-router.post('/delete', (req, res, next) => {
-    access.delete({
-        'id': req.body.id
-    }, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            msg: err ? err.message : ''
-        });
+router.post('/delete', (request, response, next) => {
+    const { id } = request.body;
+    if (!id) {
+        response.send({ code: -1, msg: '缺少参数id'});
+        return false;
+    }
+    access.delete({ id }, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1 });
     });
 });
 

@@ -20,9 +20,10 @@ const app = {
         // setState({ commit }, object) {
         //     commit('SET_STATE', object);
         // },
-        handleAccessList({ dispatch }) {
+        handleQueryData({ dispatch }, { method, params = {} }){
             return new Promise(resolve => {
-                get('/api/access/list', {}).then(res => {
+                console.log(method, params)
+                get(method, params).then(res => {
                     const { code, data, msg } = res;
                     if (code == 1) {
                         resolve(data);
@@ -33,37 +34,7 @@ const app = {
                         });
                     }
                 });
-            })
-        },
-        handleUserList({ dispatch }, params) {
-            return new Promise(resolve => {
-                get('/api/user/list', params).then(res => {
-                    const { code, data } = res;
-                    if (code === 1) {
-                        resolve(data);
-                    } else {
-                        Notice.error({
-                            title: '错误信息',
-                            desc: res.msg
-                        });
-                    }
-                });
             });
-        },
-        handleCourseList({ dispatch }, params) {
-            return new Promise(resolve => {
-                get('/api/course/list', params).then(res => {
-                    const { code, data, msg } = res;
-                    if (code === 1) {
-                        resolve(data);
-                    } else {
-                        Notice.error({
-                            title: '错误信息',
-                            desc: msg
-                        });
-                    }
-                });
-            })
         }
     },
 };

@@ -12,6 +12,7 @@ class user {
                 u.user_id,
                 u.user_name,
                 u.password, 
+                a.access_id,
                 a.access 
             FROM
                 USER u
@@ -22,16 +23,14 @@ class user {
         db.get(sql, callback);
     }
     // 查询 分页 条件
-    static all(data, callback) {
-        const { page = 1, page_size = 10, access = '', ...params } = data;
-
+    static all({ page = 1, page_size = 10, ...params }, callback) {
         let select = `
             SELECT
                 u.user_id,
                 u.user_name,
                 u.account,
                 u.password,
-                a.access,
+                a.access_id,
                 a.access_name 
             FROM
                 USER u
@@ -97,8 +96,7 @@ class user {
         });
      };
     // 添加数据
-    static create(data, callback) {
-        const { user_name = null, account = null, password = null, access_id = null } = data;
+    static create({ user_name = null, account = null, password = null, access_id = null }, callback) {
         const sql = `INSERT INTO USER (user_name, account, password, access_id) VALUES ('${user_name}', '${account}', '${password}', ${access_id});`;
         db.run(sql, callback);
     }
@@ -109,25 +107,23 @@ class user {
         db.get(sql, callback);
     }
     // 更新数据
-    static update(data, callback) {
-        const { id = null, user_name = null, account = null, password = null, access_id = null } = data;
+    static update({ id = null, user_name = null, account = null, password = null, access_id = null }, callback) {
         if (!id) return callback(new Error(`缺少参数id`));
         const sql = `UPDATE USER SET user_name = '${user_name}', account = ${account}, password = ${password}, access_id = ${access_id} WHERE user_id = ${ id };`;
         db.run(sql, callback);
     }
     // 删除数据
-    static delete(data, callback) {
-        const { id = null } = data;
+    static delete({ id = null }, callback) {
         if (!id) return callback(new Error(`缺少参数id`));
         const sql = `DELETE FROM USER WHERE user_id = ${id};`;
         db.run(sql, callback)
     }
     // 查询用户相关信息
-    static query_userinfo(data, callback) {
-        const { user_id = null, access = null } = data;
+    static query_userinfo({ user_id = null, access_id = null }, callback) {
         let sql = '';
-        switch(access) {
-            case 'teacher':
+        switch(access_id) {
+            case 2:
+                // teacher
                 sql = `
                     SELECT
                         (SELECT COURSE.course_name FROM COURSE WHERE COURSE.course_id = r.course_id) as course_name,
@@ -142,7 +138,8 @@ class user {
                 `;
                 db.all(sql, callback);
                 break;
-            case 'student':
+            case 3:
+                // student
                 db.all('SELECT course_id FROM COURSE', (err, list = []) => {
                     if (err) return callback(err, {});
                     let select = `

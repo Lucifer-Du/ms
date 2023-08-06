@@ -2,22 +2,22 @@
     <Card>
         <Form>
             <FormItem>
-                <Button class="operate" type="primary" @click="toAdd">新增</Button>
+                <Button class="operate" type="primary" @click="editTableData('add')">新增</Button>
             </FormItem>
         </Form>
         <Table :data="tables" :columns="columns" border>
             <template #operate="{ row }">
-                <Button class="operate" type="primary" size="small" @click="toEdit(row)">编辑</Button>
-                <Button class="operate" type="error" size="small" @click="toDelete(row)">删除</Button>
+                <Button class="operate" type="primary" size="small" @click="editTableData('edit', row)">编辑</Button>
+                <Button class="operate" type="error" size="small" @click="delTableData(row)">删除</Button>
             </template>
         </Table>
         <Page class="pagination" v-model="page.current" :total="page.total" placement="top" show-elevator show-sizer
             transfer @on-change="changePage" @on-page-size-change="changePageSize" />
-        <Modal v-model="modal.visible" :title="modal.title" :width="modal.width" @on-cancel="handleCancel">
+        <Modal v-model="modal.visible" :title="modal.title" :width="modal.width" @on-cancel="modalCancel">
             <component :ref="modal.ref" :is="modal.component" :options="modal.props" :visible="modal.visible" />
             <template #footer>
-                <Button class="operate" type="text" @click="handleCancel">取消</Button>
-                <Button class="operate" type="primary" @click="handleConfirm">{{ modal.okText }}</Button>
+                <Button class="operate" type="text" @click="modalCancel">取消</Button>
+                <Button class="operate" type="primary" @click="modalConfirm">{{ modal.okText }}</Button>
             </template>
         </Modal>
     </Card>
@@ -25,9 +25,8 @@
 
 <script>
 import { markRaw } from 'vue';
-import { get, post } from '@/utils/http';
-import editForm from './edit.vue';
 import { mapActions } from 'vuex';
+import editForm from './edit.vue';
 
 export default {
     data() {
@@ -59,7 +58,8 @@ export default {
         this.getTableData();
     },
     methods: {
-        ...mapActions('app', ['handleCourseList']),
+        ...mapActions('app', ['handleQueryData']),
+        ...mapActions('user', ['handleEditCourse', 'handleDeleteCourse']),
         getTableData: async function() {
             let params = {
                 page: this.page.current,
@@ -69,7 +69,10 @@ export default {
             const { user_id } = this.$cookies.get('user_info') || {};
             params.user_id = user_id;
 
-            const { list = [], total } = await this.handleCourseList(params);
+            const { list = [], total } = await this.handleQueryData({
+                method: '/api/course/list',
+                params
+            });
             this.tables = list;
             this.page.total = total;
         },
@@ -81,28 +84,41 @@ export default {
             Object.assign(this.page, { size: pageSize });
             this.getTableData();
         },
-        toAdd() {
-            Object.assign(this.modal, {
+        editTableData(type, item) {
+            let options = {
                 visible: true,
-                title: '新增',
                 okText: '提交',
-                ref: 'course-add',
                 component: markRaw(editForm)
+            };
+            if (type === 'edit') {
+                options.title = '编辑';
+                options.ref = 'course-edit';
+                options.props = { id: item.course_id };
+            } else {
+                options.title = '新增';
+                options.ref = 'course-add';
+            }
+            Object.assign(this.modal, options);
+        },
+        delTableData(item) {
+            const that = this;
+            this.$Modal.confirm({
+                title: '删除提醒',
+                content: `是否删除${item.name}`,
+                onOk: async () => {
+                    await that.handleDeleteTableData({
+                        method: '/api/course/delete',
+                        id: item.id
+                    });
+                    this.$Notice.success({
+                        title: '操作信息',
+                        desc: '删除成功'
+                    });
+                    this.getTableData();
+                },
             });
         },
-        toEdit(item) {
-            Object.assign(this.modal, {
-                visible: true,
-                title: `编辑`,
-                okText: '提交',
-                ref: 'course-edit',
-                component: markRaw(editForm),
-                props: {
-                    id: item.course_id
-                }
-            });
-        },
-        handleCancel() {
+        modalCancel() {
             this.modal = {
                 visible: false,
                 title: '',
@@ -114,55 +130,22 @@ export default {
             };
             this.getTableData();
         },
-        async handleConfirm() {
+        modalConfirm: async function() {
             if (typeof this.$refs[this.modal.ref].beforeSubmit === 'function') {
                 const formData = await this.$refs[this.modal.ref].beforeSubmit();
 
                 let method = ''
-                if (formData.id) {
+                if (this.modal.ref == 'course-edit') {
                     method = '/api/course/edit';
                 } else {
                     method = '/api/course/add';
                 }
+                await this.handleEditTableData({ method, params: formData });
 
-                post(method, formData).then(res => {
-                    const { code } = res;
-                    if (code === 1) {
-                        this.handleCancel();
-                    } else {
-                        this.$Notice.error({
-                            title: '错误信息',
-                            desc: res.msg
-                        });
-                    }
-                });
+                this.modalCancel();
             }
         },
-        toDelete(item) {
-            this.$Modal.confirm({
-                title: '删除提醒',
-                content: `是否删除${item.name}`,
-                onOk: () => {
-                    post('/api/course/delete', {
-                        id: item.id
-                    }).then(res => {
-                        const { code } = res;
-                        if (code === 1) {
-                            this.$Notice.success({
-                                title: '操作信息',
-                                desc: '删除成功'
-                            });
-                            this.getTableData();
-                        } else {
-                            this.$Notice.error({
-                                title: '错误信息',
-                                desc: res.msg
-                            });
-                        }
-                    });
-                },
-            });
-        },
+        
     }
 }
 </script>

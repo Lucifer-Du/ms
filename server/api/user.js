@@ -13,8 +13,8 @@ router.post('/login', (request, response, next) => {
         }
         if (data) {
             if (data.password == password) {
-                const { user_id, user_name, access } = data;
-                response.send({ code: 1, data: { user_id, user_name, access } });
+                const { user_id, user_name, access_id } = data;
+                response.send({ code: 1, data: { user_id, user_name, access_id } });
             } else {
                 response.send({ code: -1, msg: '密码错误'});
             }
@@ -24,75 +24,90 @@ router.post('/login', (request, response, next) => {
     });
 });
 
-router.get('/list', (req, res, next) => {
-    user.all(req.query, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            data,
-            msg: err ? err.message : ''
-        });
+router.get('/list', (request, response, next) => {
+    user.all(request.query, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1, data });
     });
 });
 
-router.post('/add', (req, res, next) => {
-    user.create(req.body, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            msg: err ? err.message : ''
-        });
+router.post('/add', (request, response, next) => {
+    user.create(request.body, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1 });
     });
 });
 
-router.get('/detail', (req, res, next) => {
-    user.find(req.query.id, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            data,
-            msg: err ? err.message : ''
-        });
+router.get('/detail', (request, response, next) => {
+    const { id } = request.query;
+    if (!id) {
+        response.send({ code: -1, msg: '缺少参数id'});
+        return false;
+    }
+    user.find(id, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1, data });
     });
 });
 
-router.post('/edit', (req, res, next) => {
-    user.update(req.body, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            msg: err ? err.message : ''
-        });
+router.post('/edit', (request, response, next) => {
+    user.update(request.body, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1 });
     });
 });
 
-router.post('/delete', (req, res, next) => {
-    user.delete({
-        'id': req.body.id
-    }, (err, data) => {
-        res.send({
-            code: err ? -1 : 1,
-            msg: err ? err.message : ''
-        });
+router.post('/delete', (request, response, next) => {
+    const { id } = request.body;
+    if (!id) {
+        response.send({ code: -1, msg: '缺少参数id'});
+        return false;
+    }
+    user.delete({ id }, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1 });
     });
 });
 
-router.post('/query_account', (req, res, next) => {
+router.post('/query_account', (request, response, next) => {
+    const { account } = request.body;
+    if (!account) {
+        response.send({ code: -1, msg: '缺少参数account'});
+        return false;
+    }
     user.query_account({
-        'account': req.body.account
-    }, (err, result) => {
-        res.send({
-            code: err ? -1 : 1,
-            data: result,
-            msg: err ? err.message : ''
-        });
+        account
+    }, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1, data });
     });
 });
 
-router.post('/query_userinfo', (req, res, next) => {
-    // const { user_id, access } = req.body;
-    user.query_userinfo(req.body, (err, result) => {
-        res.send({
-            code: err ? -1 : 1,
-            data: result,
-            msg: err ? err.message : ''
-        });
+router.post('/query_userinfo', (request, response, next) => {
+    user.query_userinfo(request.body, (err, data) => {
+        if (err) {
+            response.send({ code: -1, msg: err.message });
+            return false;
+        }
+        response.send({ code: 1, data });
     });
 });
 

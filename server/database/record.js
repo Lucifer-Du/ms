@@ -6,9 +6,7 @@ const db = new sqlite3.Database(dbname);
 
 class record {
     // 查询 分页 条件
-    static all(data, callback) {
-        const { page, page_size, ...params } = data;
-
+    static all({ page = 1, page_size = 10, ...params }, callback) {
         db.all('SELECT course_id FROM COURSE', (err, list = []) => {
             if (err) return callback(err);
             
@@ -124,9 +122,7 @@ class record {
         });
     };
     // 添加数据
-    static create(data, callback) {
-        let { user_id = '', course_id = '', course_record = '' } = data;
-        
+    static create({ user_id = null, course_id = null, course_record = null }, callback) {
         let sql = `INSERT INTO RECORD(user_id, course_id, course_record) VALUES`;
         course_id = course_id.split(',').map(Number);
         course_record = course_record.split(',');
@@ -181,8 +177,7 @@ class record {
         });
     }
     // 更新数据
-    static update(data, callback) {
-        let { user_id = null, course_id = null, course_record = null } = data;
+    static update({ user_id = null, course_id = null, course_record = null }, callback) {
         let sql = `DELETE FROM RECORD WHERE user_id = ${user_id};`;
         course_id = course_id.split(',');
         course_record = course_record.split(',');
@@ -192,8 +187,7 @@ class record {
         db.exec(sql, callback);
     }
     // 删除数据
-    static delete(data, callback) {
-        const { id = null } = data;
+    static delete({ id = null }, callback) {
         if (!id) return callback(new Error(`缺少参数id`));
         const sql = `DELETE FROM RECORD WHERE user_id = ${id};`;
         db.exec(sql, callback);

@@ -219,17 +219,18 @@ export default {
             });
         },
         queryData() {
-            const { user_id, access } = this.user;
+            const { user_id, access_id } = this.user;
             post("/api/user/query_userinfo", {
                 user_id,
-                access
+                access_id
             }).then(async (res) => {
                 const { code, data = [] } = res;
                 if (code === 1) {
                     if (data.length <= 0)
                         return false;
-                    switch (access) {
-                        case "student":
+                    switch (access_id) {
+                        case 3:
+                            // student
                             const { user_id, total, average, rank, ...course } = data;
                             const course_list = await this.queryCourse();
                             this.list = Object.keys(course).reduce((pre, cur) => {
@@ -249,7 +250,8 @@ export default {
                             this.average = average;
                             this.rank = rank;
                             break;
-                        case "teacher":
+                        case 2:
+                            // teacher
                             let names = [];
                             let teacher = [];
                             data.forEach(item => {

@@ -27,7 +27,7 @@ const user = {
             }).then(res => {
                 const { code = 1, data = {}, msg = '' } = res;
                 if (code == 1) {
-                    VueCookies.set('user_info', data);
+                    VueCookies.set('user_info', { ...data, account });
                     router.push({ name: 'home' });
                 } else {
                     Notice.error({
@@ -41,7 +41,36 @@ const user = {
             VueCookies.remove('user_info');
             router.push({ name: 'login' });
         },
-        
+        handleEditTableData({ dispatch }, { method, params }) {
+            return new Promise(resolve => {
+                post(method, params).then(res => {
+                    const { code, msg } = res;
+                    if (code === 1) {
+                        resolve();
+                    } else {
+                        Notice.error({
+                            title: '错误信息',
+                            desc: msg
+                        });
+                    }
+                });
+            });
+        },
+        handleDeleteTableData({ dispatch }, { method, id }) {
+            return new Promise(resolve => {
+                post(method, { id }).then(res => {
+                    const { code, msg } = res;
+                    if (code === 1) {
+                        resolve();
+                    } else {
+                        Notice.error({
+                            title: '错误信息',
+                            desc: msg
+                        });
+                    }
+                });
+            })
+        }
     },
 };
 

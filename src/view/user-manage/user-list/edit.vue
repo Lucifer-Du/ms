@@ -11,14 +11,16 @@
         </FormItem>
         <FormItem label="用户身份" prop="access_id">
             <RadioGroup v-model="formData.access_id">
-                <Radio v-for="item in user_access" :key="item.access_id" :label="item.access_id">{{ item.access_name }}</Radio>
+                <template v-for="item in access_list" :key="item.access_id">
+                    <Radio v-if="item.access_id > $cookies.get('user_info').access_id" :label="item.access_id">{{ item.access_name }}</Radio>
+                </template>
             </RadioGroup>
         </FormItem>
     </Form>
 </template>
 
 <script>
-import { get } from '@/utils/http';
+import { mapActions } from 'vuex';
 
 export default {
     props: {
@@ -48,48 +50,31 @@ export default {
                     { required: true, type: 'number', message: '请选择用户身份', trigger: 'change' }
                 ],
             },
-            user_access: []
+            access_list: []
         }
     },
     created() {
         this.getUserAccess();
     },
     mounted() {
-        const { id } = this.options;
-        if (id) {
-            this.getDetail();
-        }
+        this.getUserDetail();
     },
     methods: {
-        getDetail() {
-            get('/api/user/detail', {
-                id: this.options.id
-            }).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    const { user_id, user_name, account, password, access_id } = data;
-                    Object.assign(this.formData, { id: user_id, user_name, account, password, access_id });
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
+        ...mapActions('app', ['handleQueryData']),
+        getUserAccess: async function() {
+            const { list = [] } = await this.handleQueryData({
+                method: '/api/access/list'
             });
+            this.access_list = list;
         },
-        getUserAccess() {
-            get('/api/access/list', {}).then(res => {
-                const { code, data } = res;
-                if (code === 1) {
-                    const { list = [] } = data;
-                    this.user_access = list;
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
+        getUserDetail: async function() {
+            const { id } = this.options;
+            if (!id) return false;
+            const { user_id, user_name, account, password, access_id } = await this.handleQueryData({
+                method: '/api/user/detail',
+                params: { id }
             });
+            Object.assign(this.formData, { id: user_id, user_name, account, password, access_id });
         },
         beforeSubmit() {
             return new Promise((resolve) => {

@@ -73,8 +73,7 @@ class access {
         });
     };
     // 添加数据
-    static create(data, callback) {
-        const { name = null } = data;
+    static create({ name = null }, callback) {
         const sql = `INSERT INTO ACCESS(access_name) VALUES(${name});`;
         db.run(sql, callback);
     }
@@ -85,15 +84,13 @@ class access {
         db.get(sql, callback);
     }
     // 更新数据
-    static update(data, callback) {
-        const { id = null, access_name = null } = data;
+    static update({ id = null, access_name = null }, callback) {
         if (!id) return callback(new Error(`缺少参数id`));
         const sql = `UPDATE ACCESS SET access_name = ${access_name} WHERE access_id = ${id};`;
         db.run(sql, callback)
     }
     // 删除数据
-    static delete(data, callback) {
-        const { id = null } = data;
+    static delete({ id = null }, callback) {
         if (!id) return callback(new Error(`缺少参数id`));
         const sql = `DELETE FROM ACCESS WHERE access_id = ${id};`;
         db.run(sql, callback)

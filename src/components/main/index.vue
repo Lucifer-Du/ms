@@ -3,7 +3,7 @@
         <Sider>
             <Menu :active-name="active_name" theme="dark" width="auto" :open-names="open_names">
                 <template v-for="menu in menu_list" :key="menu.name">
-                    <template v-if="!menu.meta.hideInMenu && menu.meta.access.includes(user.access)">
+                    <template v-if="!menu.meta.hideInMenu && menu.meta.access.includes(user.access_id)">
                         <template v-if="menu.children">
                             <Submenu :name="menu.name">
                                 <template #title>
@@ -11,14 +11,14 @@
                                     {{ menu.meta.title }}
                                 </template>
                                 <template v-for="menuItem in menu.children" :key="menuItem.name">
-                                    <MenuItem v-if="menuItem.meta.access.includes(user.access)" :name="menuItem.name" :to="menuItem.path">
+                                    <MenuItem v-if="menuItem.meta.access.includes(user.access_id)" :name="menuItem.name" :to="menuItem.path">
                                         {{ menuItem.meta.title }}
                                     </MenuItem>
                                 </template>
                             </Submenu>
                         </template>
                         <template v-else>
-                            <MenuItem v-if="menu.meta.access.includes(user.access)" :key="menu.name" :name="menu.name" :to="menu.path">
+                            <MenuItem v-if="menu.meta.access.includes(user.access_id)" :key="menu.name" :name="menu.name" :to="menu.path">
                                 {{ menu.meta.title }}
                             </MenuItem>
                         </template>

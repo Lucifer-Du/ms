@@ -9,28 +9,30 @@
             </FormItem>
             <FormItem label="用户身份">
                 <Select class="form-input" v-model="search.access_id">
-                    <Option :value="0">全部</Option>
+                    <template v-if="$cookies.get('user_info').access_id == 1">
+                        <Option :value="0">全部</Option>
+                    </template>                   
                     <template v-for="access in access_list" :key="access.access_id">
-                        <Option :value="access.access_id">{{ access.access_name }}</Option>
+                        <Option v-if="access.access_id > $cookies.get('user_info').access_id" :value="access.access_id">{{ access.access_name }}</Option>
                     </template>
                 </Select>
             </FormItem>
             <Button class="operate" type="primary" @click="getTableData">搜索</Button>
-            <Button class="operate" type="primary" @click="toAdd">新增</Button>
+            <Button class="operate" type="primary" @click="editTableData('add')">新增</Button>
         </Form>
         <Table :data="tables" :columns="columns" border>
             <template #operate="{ row }">
-                <Button class="operate" type="primary" size="small" @click="toEdit(row)">编辑</Button>
-                <Button class="operate" type="error" size="small" @click="toDelete(row)">删除</Button>
+                <Button class="operate" type="primary" size="small" @click="editTableData('edit', row)">编辑</Button>
+                <Button class="operate" type="error" size="small" @click="delTableData(row)">删除</Button>
             </template>
         </Table>
         <Page class="pagination" v-model="page.current" :total="page.total" placement="top" show-elevator show-sizer
             transfer @on-change="changePage" @on-page-size-change="changePageSize" />
-        <Modal v-model="modal.visible" :title="modal.title" :width="modal.width" @on-cancel="handleCancel">
+        <Modal v-model="modal.visible" :title="modal.title" :width="modal.width" @on-cancel="modalCancel">
             <component :ref="modal.ref" :is="modal.component" :options="modal.props" :visible="modal.visible" />
             <template #footer>
-                <Button class="operate" type="text" @click="handleCancel">取消</Button>
-                <Button class="operate" type="primary" @click="handleConfirm">{{ modal.okText }}</Button>
+                <Button class="operate" type="text" @click="modalCancel">取消</Button>
+                <Button class="operate" type="primary" @click="modalConfirm">{{ modal.okText }}</Button>
             </template>
         </Modal>
     </Card>
@@ -38,9 +40,8 @@
 
 <script>
 import { markRaw } from 'vue';
-import { get, post } from '@/utils/http';
-import editForm from './edit.vue';
 import { mapActions } from 'vuex';
+import editForm from './edit.vue';
 
 export default {
     data() {
@@ -81,9 +82,12 @@ export default {
         this.getTableData();
     },
     methods: {
-        ...mapActions('app', ['handleAccessList', 'handleUserList']),
+        ...mapActions('app', ['handleQueryData']),
+        ...mapActions('user', ['handleEditTableData', 'handleDeleteTableData']),
         getAccessList: async function() {
-            const { list = [] } = await this.handleAccessList();
+            const { list = [] } = await this.handleQueryData({
+                method: '/api/access/list'
+            });
             this.access_list = list;
         },
         getTableData: async function() {
@@ -103,9 +107,12 @@ export default {
                 }
             });
 
-            const { list = [], total = 0 } = await this.handleUserList(params);
-            const { access } = this.$cookies.get('user_info') || {};
-            this.tables = list.filter(item => item.access !== access);
+            const { list = [], total = 0 } = await this.handleQueryData({
+                method: '/api/user/list',
+                params
+            });
+            const { access_id } = this.$cookies.get('user_info') || {};
+            this.tables = list.filter(item => item.access_id !== access_id);
             this.page.total = total;
         },
         changePage(page) {
@@ -116,28 +123,41 @@ export default {
             Object.assign(this.page, { size: pageSize });
             this.getTableData();
         },
-        toAdd() {
-            Object.assign(this.modal, {
+        editTableData(type, item) {
+            let options = {
                 visible: true,
-                title: '新增',
                 okText: '提交',
-                ref: 'user-group-add',
                 component: markRaw(editForm)
+            };
+            if (type === 'edit') {
+                options.title = '编辑';
+                options.ref = 'user-edit';
+                options.props = { id: item.user_id };
+            } else {
+                options.title = '新增';
+                options.ref = 'user-add';
+            }
+            Object.assign(this.modal, options);
+        },
+        delTableData(item) {
+            const that = this;
+            this.$Modal.confirm({
+                title: '删除提醒',
+                content: `是否删除${item.user_name}`,
+                onOk: async () => {
+                    await that.handleDeleteTableData({
+                        method: '/api/user/delete',
+                        id: item.user_id
+                    });
+                    this.$Notice.success({
+                        title: '操作信息',
+                        desc: '删除成功'
+                    });
+                    this.getTableData();
+                },
             });
         },
-        toEdit(item) {
-            Object.assign(this.modal, {
-                visible: true,
-                title: `编辑`,
-                okText: '提交',
-                ref: 'user-group-edit',
-                component: markRaw(editForm),
-                props: {
-                    id: item.user_id
-                }
-            });
-        },
-        handleCancel() {
+        modalCancel() {
             this.modal = {
                 visible: false,
                 title: '',
@@ -149,54 +169,21 @@ export default {
             };
             this.getTableData();
         },
-        async handleConfirm() {
+        modalConfirm: async function() {
             if (typeof this.$refs[this.modal.ref].beforeSubmit === 'function') {
                 const formData = await this.$refs[this.modal.ref].beforeSubmit();
 
                 let method = ''
-                if (this.modal.type === 'user-group-edit') {
+                if (this.modal.ref === 'user-edit') {
                     method = '/api/user/edit';
                 } else {
                     method = '/api/user/add';
                 }
 
-                post(method, formData).then(res => {
-                    const { code } = res;
-                    if (code === 1) {
-                        this.handleCancel();
-                    } else {
-                        this.$Notice.error({
-                            title: '错误信息',
-                            desc: res.msg
-                        });
-                    }
-                });
+                await this.handleEditTableData({ method, params: formData });
+
+                this.modalCancel();
             }
-        },
-        toDelete(item) {
-            this.$Modal.confirm({
-                title: '删除提醒',
-                content: `是否删除${item.user_name}`,
-                onOk: () => {
-                    post('/api/user/delete', {
-                        id: item.user_id
-                    }).then(res => {
-                        const { code } = res;
-                        if (code === 1) {
-                            this.$Notice.success({
-                                title: '操作信息',
-                                desc: '删除成功'
-                            });
-                            this.getTableData();
-                        } else {
-                            this.$Notice.error({
-                                title: '错误信息',
-                                desc: res.msg
-                            });
-                        }
-                    });
-                },
-            });
         },
     }
 }

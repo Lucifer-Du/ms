@@ -9,9 +9,7 @@ const USER = 'user';
 
 class course {
     // 查询 分页 条件
-    static all(data, callback) {
-        const { page, page_size, ...params } = data;
-
+    static all({ page = 1, page_size = 10, ...params }, callback) {
         let select = `
             SELECT
                 c.course_id,
@@ -80,8 +78,7 @@ class course {
         });
     };
     // 添加数据
-    static create(data, callback) {
-        const { course_name = null, user_id = null } = data;
+    static create({ course_name = null, user_id = null }, callback) {
         const sql = `INSERT INTO COURSE(course_name, user_id) VALUES('${course_name}', ${user_id});`;
         db.run(sql, callback);
     }
@@ -92,15 +89,13 @@ class course {
         db.get(sql, callback);
     }
     // 更新数据
-    static update(data, callback) {
-        const { id = null, course_name = null, user_id = null } = data;
+    static update({ id = null, course_name = null, user_id = null }, callback) {
         if (!id) return callback(new Error(`缺少参数id`));
         const sql = `UPDATE COURSE SET course_name = '${course_name}', user_id = ${user_id} WHERE course_id = ${id};`;
         db.run(sql, callback);
     }
     // 删除数据
-    static delete(data, callback) {
-        const { id = null } = data;
+    static delete({ id = null }, callback) {
         if (!id) return callback(new Error(`缺少参数id`));
         const sql = `DELETE FROM COURSE WHERE course_id = ${id};`;
         db.run(sql, callback)

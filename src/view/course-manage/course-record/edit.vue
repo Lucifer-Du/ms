@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import { get, post } from '@/utils/http';
+import { mapActions } from 'vuex';
 
 export default {
     props: {
@@ -57,72 +57,47 @@ export default {
             course_list: []
         }
     },
-    async created() {
-        await this.getUserList();
-        await this.getCourseList();
-        const { id } = this.options;
-        if (id) {
-            this.getDetail();
-        }
+    created() {
+        this.getUserList();
+        this.getCourseList();
+    },
+    mounted() {
+        this.getDetail();
     },
     methods: {
-        getUserList() {
-            get('/api/user/list', {
-                access_id: 2
-            }).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    const { list = [] } = data;
-                    this.user_list = list;
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
+        ...mapActions('app', ['handleQueryData']),
+        getUserList: async function() {
+            const { list = [] } = await this.handleQueryData({
+                method: '/api/user/list',
+                params: { access_id: this.$cookies.get('user_info').access_id + 1 }
             });
+            this.user_list = list;
         },
-        getCourseList() {
-            get('/api/course/list', {}).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    const { list = [] } = data;
-                    this.course_list = list;
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
+        getCourseList: async function() {
+            const { list = [] } = await this.handleQueryData({
+                method: '/api/course/list'
             });
+            this.course_list = list;
         },
-        getDetail() {
-            get('/api/record/detail', {
-                id: this.options.id
-            }).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    let { user_id, user_name, ...record } = data;
-
-                    const course_id = [], course_record = [];
-                    for (let key in record) {
-                        if(record[key] !== '') {
-                            course_id.push(key);
-                            course_record.push(record[key]);
-                        }
-                    }
-                    Object.assign(this.formData, {
-                        user_id,
-                        user_name,
-                        course_id: course_id.map(item => item.split('_')[1]).map(Number),
-                        course_record: record
-                    });
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
+        getDetail: async function() {
+            const { id = null } = this.options;
+            if (!id) return false;
+            const { user_id, user_name, ...record } = await this.handleQueryData({
+                method: '/api/record/detail',
+                params: { id }
+            });
+            const course_id = [], course_record = [];
+            for (let key in record) {
+                if(record[key] !== '') {
+                    course_id.push(key);
+                    course_record.push(record[key]);
                 }
+            }
+            Object.assign(this.formData, {
+                user_id,
+                user_name,
+                course_id: course_id.map(item => item.split('_')[1]).map(Number),
+                course_record: record
             });
         },
         beforeSubmit() {

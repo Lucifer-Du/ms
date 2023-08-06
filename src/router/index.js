@@ -18,7 +18,7 @@ export const routes = [
         component: Main,
         meta: {
             title: '用户管理',
-            access: ['administrator', 'teacher', 'student']
+            access: [1, 2, 3]
         },
         children: [
             {
@@ -27,7 +27,7 @@ export const routes = [
                 meta: {
                     title: '用户列表',
                     requiresAuth: true,
-                    access: ['administrator', 'teacher']
+                    access: [1, 2]
                 },
                 component: () => import('@/view/user-manage/user-list/list.vue')
             },
@@ -37,7 +37,7 @@ export const routes = [
                 meta: {
                     title: '个人信息',
                     requiresAuth: true,
-                    access: ['administrator', 'teacher', 'student']
+                    access: [1, 2, 3]
                 },
                 component: () => import('@/view/user-manage/user-info/index.vue')
             }
@@ -49,7 +49,7 @@ export const routes = [
         component: Main,
         meta: {
             title: '学科管理',
-            access: ['administrator', 'teacher']
+            access: [1, 2]
         },
         children: [
             {
@@ -58,7 +58,7 @@ export const routes = [
                 meta: {
                     title: '学科列表',
                     requiresAuth: true,
-                    access: ['administrator', 'teacher']
+                    access: [1, 2]
                 },
                 component: () => import('@/view/course-manage/course_list/list.vue')
             },
@@ -68,7 +68,7 @@ export const routes = [
                 meta: {
                     title: '学科成绩',
                     requiresAuth: true,
-                    access: ['teacher']
+                    access: [2]
                 },
                 component: () => import('@/view/course-manage/course-record/list.vue')
             },

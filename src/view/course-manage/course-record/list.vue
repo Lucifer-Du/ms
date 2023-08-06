@@ -8,21 +8,21 @@
                 <Input class="form-input" v-model="search.user_name" placeholder="请填写" clearable />
             </FormItem>
             <Button class="operate" type="primary" @click="getTableData">搜索</Button>
-            <Button class="operate" type="primary" @click="toAdd">新增</Button>
+            <Button class="operate" type="primary" @click="editTableData('add')">新增</Button>
         </Form>
         <Table :data="tables" :columns="columns" border>
             <template #operate="{ row }">
-                <Button class="operate" type="primary" size="small" @click="toEdit(row)">编辑</Button>
-                <Button class="operate" type="error" size="small" @click="toDelete(row)">删除</Button>
+                <Button class="operate" type="primary" size="small" @click="editTableData('edit', row)">编辑</Button>
+                <Button class="operate" type="error" size="small" @click="delTableData(row)">删除</Button>
             </template>
         </Table>
         <Page class="pagination" v-model="page.current" :total="page.total" placement="top" show-elevator show-sizer
             transfer @on-change="changePage" @on-page-size-change="changePageSize" />
-        <Modal v-model="modal.visible" :title="modal.title" :width="modal.width" @on-cancel="handleCancel">
+        <Modal v-model="modal.visible" :title="modal.title" :width="modal.width" @on-cancel="modalCancel">
             <component :ref="modal.ref" :is="modal.component" :options="modal.props" :visible="modal.visible" />
             <template #footer>
-                <Button class="operate" type="text" @click="handleCancel">取消</Button>
-                <Button class="operate" type="primary" @click="handleConfirm">{{ modal.okText }}</Button>
+                <Button class="operate" type="text" @click="modalCancel">取消</Button>
+                <Button class="operate" type="primary" @click="modalConfirm">{{ modal.okText }}</Button>
             </template>
         </Modal>
     </Card>
@@ -30,7 +30,7 @@
 
 <script>
 import { markRaw } from 'vue';
-import { get, post } from '@/utils/http';
+import { mapActions } from 'vuex';
 import editForm from "./edit.vue";
 
 export default {
@@ -92,28 +92,22 @@ export default {
             return list;
         }
     },
-    async created() {
-        await this.getCourseList();
+    created() {
+        this.getCourseList();
     },
     mounted() {
         this.getTableData();
     },
     methods: {
-        async getCourseList() {
-            await get('/api/course/list', {}).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    const { list = [] } = data;
-                    this.course_list = list;
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
+        ...mapActions('app', ['handleQueryData']),
+        ...mapActions('user', ['handleEditTableData', 'handleDeleteTableData']),
+        getCourseList: async function() {
+            const { list = [] } = await this.handleQueryData({
+                method: '/api/course/list'
             });
+            this.course_list = list;
         },
-        getTableData() {
+        getTableData: async function() {
             let params = {
                 page: this.page.current,
                 page_size: this.page.size
@@ -124,19 +118,12 @@ export default {
                 }
             });
 
-            get('/api/record/list', params).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    const { list = [], total } = data;
-                    this.tables = list;
-                    this.page.total = total;
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
+            const { list = [], total } = await this.handleQueryData({
+                method: '/api/record/list',
+                params
             });
+            this.tables = list;
+            this.page.total = total;
         },
         changePage(page) {
             Object.assign(this.page, { current: page });
@@ -146,28 +133,41 @@ export default {
             Object.assign(this.page, { size: pageSize });
             this.getTableData();
         },
-        toAdd() {
-            Object.assign(this.modal, {
+        editTableData(type, item) {
+            let options = {
                 visible: true,
-                title: '新增',
                 okText: '提交',
-                ref: 'user-record-add',
                 component: markRaw(editForm)
+            };
+            if (type === 'edit') {
+                options.title = '编辑';
+                options.ref = 'record-edit';
+                options.props = { id: item.user_id };
+            } else {
+                options.title = '新增';
+                options.ref = 'record-add';
+            }
+            Object.assign(this.modal, options);
+        },
+        delTableData(item) {
+            const that = this;
+            this.$Modal.confirm({
+                title: '删除提醒',
+                content: `是否删除${item.user_name}`,
+                onOk: async () => {
+                    await that.handleDeleteTableData({
+                        method: '/api/record/delete',
+                        id: item.user_id
+                    });
+                    this.$Notice.success({
+                        title: '操作信息',
+                        desc: '删除成功'
+                    });
+                    this.getTableData();
+                },
             });
         },
-        toEdit(item) {
-            Object.assign(this.modal, {
-                visible: true,
-                title: `编辑`,
-                okText: '提交',
-                ref: 'user-record-edit',
-                component: markRaw(editForm),
-                props: {
-                    id: item.user_id
-                }
-            });
-        },
-        handleCancel() {
+        modalCancel() {
             this.modal = {
                 visible: false,
                 title: '',
@@ -179,53 +179,21 @@ export default {
             };
             this.getTableData();
         },
-        async handleConfirm() {
+        modalConfirm: async function() {
             if (typeof this.$refs[this.modal.ref].beforeSubmit === 'function') {
                 const formData = await this.$refs[this.modal.ref].beforeSubmit();
+
                 let method = ''
-                if (this.modal.ref === 'user-record-add') {
-                    method = '/api/record/add';
-                } else {
+                if (this.modal.ref === 'record-edit') {
                     method = '/api/record/edit';
+                } else {
+                    method = '/api/record/add';
                 }
 
-                post(method, formData).then(res => {
-                    const { code } = res;
-                    if (code === 1) {
-                        this.handleCancel();
-                    } else {
-                        this.$Notice.error({
-                            title: '错误信息',
-                            desc: res.msg
-                        });
-                    }
-                });
+                await this.handleEditTableData({ method, params: formData });
+
+                this.modalCancel();
             }
-        },
-        toDelete(item) {
-            this.$Modal.confirm({
-                title: '删除提醒',
-                content: `是否删除${item.user_name}`,
-                onOk: () => {
-                    post('/api/record/delete', {
-                        id: item.user_id
-                    }).then(res => {
-                        const { code } = res;
-                        if (code === 1) {
-                            this.$Notice.success({
-                                title: '操作信息',
-                                desc: '删除成功'
-                            });
-                            this.getTableData();
-                        } else {
-                            this.$Notice.error({
-                                title: '错误信息',
-                                desc: res.msg
-                            });
-                        }
-                    });
-                },
-            });
         },
     }
 }

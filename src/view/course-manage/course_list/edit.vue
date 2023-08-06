@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import { get } from '@/utils/http';
+import { mapActions } from 'vuex';
 
 export default {
     props: {
@@ -38,48 +38,29 @@ export default {
             user_list: []
         }
     },
-    async created() {
-        await this.getUserList();
-        const { id = null } = this.options;
-        if (id) {
-            this.getDetail();
-        }
+    created() {
+        this.getUserList();
     },
     mounted() {
-        
+        this.getDetail();
     },
     methods: {
-        async getUserList() {
-            await get('/api/user/list', {
-                access_id: 1
-            }).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    const { list = [] } = data;
-                    this.user_list = [...list];
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
+        ...mapActions('app', ['handleQueryData']),
+        getUserList: async function() {
+            const { list = [] } = await this.handleQueryData({
+                method: '/api/user/list',
+                params: { access_id: this.$cookies.get('user_info').access_id }
             });
+            this.user_list = list;
         },
-        getDetail() {
-            get('/api/course/detail', {
-                id: this.options.id
-            }).then(res => {
-                const { code, data = {} } = res;
-                if (code === 1) {
-                    const { course_id, course_name, user_id } = data;
-                    Object.assign(this.formData, { id: course_id, course_name, user_id });
-                } else {
-                    this.$Notice.error({
-                        title: '错误信息',
-                        desc: res.msg
-                    });
-                }
+        getDetail: async function() {
+            const { id = null } = this.options;
+            if (!id) return false;
+            const { course_id, course_name, user_id } = await this.handleQueryData({
+                method: '/api/course/detail',
+                params: { id }
             });
+            Object.assign(this.formData, { id: course_id, course_name, user_id });
         },
         beforeSubmit() {
             return new Promise((resolve) => {
