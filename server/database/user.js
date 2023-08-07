@@ -120,61 +120,95 @@ class user {
     }
     // 查询用户相关信息
     static query_userinfo({ user_id = null, access_id = null }, callback) {
-        let sql = '';
+        const db_teacher = new Promise((resolve, reject) => {
+            db.all(`
+                SELECT
+                    (SELECT USER.user_id FROM USER WHERE USER.user_id = r.user_id) as user_id,
+                    (SELECT USER.user_name FROM USER WHERE USER.user_id = r.user_id) as user_name,
+                    (SELECT COURSE.course_name FROM COURSE WHERE COURSE.course_id = r.course_id) as course_name,
+                    r.course_record
+                FROM
+                    COURSE c
+                    JOIN USER u ON u.user_id = c.user_id
+                    JOIN RECORD r ON r.course_id = c.course_id 
+            `, (err, data) => {
+                if (err) reject(err);
+                resolve(data);
+            });
+        });
+        const db_student = new Promise((resolve, reject) => {
+            db.all('SELECT course_id FROM COURSE', (error, list = []) => {
+                if (error) reject(error);
+                let select = `
+                    SELECT
+                        u.user_id,
+                        u.user_name,
+                `;
+                list.forEach(item => {
+                    const [course_id] = Object.values(item);
+                    select += `
+                        MAX( CASE r.course_id WHEN ${course_id} THEN r.course_record ELSE '' END ) course_${course_id},
+                    `;
+                });
+                select += `
+                        SUM( r.course_record ) total
+                    FROM
+                        RECORD r
+                        JOIN USER u ON u.user_id = r.user_id 
+                    GROUP BY
+                        r.user_id
+                `;
+                const sql = `
+                    SELECT
+                        rank.*
+                    FROM
+                        (
+                            SELECT
+                                ROW_NUMBER() OVER ( ORDER BY list.total DESC ) AS rank,
+                                list.* 
+                            FROM
+                                (${select}) list
+                        ) rank
+                `;
+                db.all(sql, (err, data) => {
+                    if (err) reject(err);
+                    resolve(data);
+                });
+            });
+        });
+
         switch(access_id) {
+            case 1:
+                Promise.all([
+                    db_teacher,
+                    db_student
+                ]).then(res => {
+                    const [teacher, student] = res;
+                    callback(null, { teacher, student });
+                }).catch(err => {
+                    callback(err, {});
+                });
+                break;
             case 2:
                 // teacher
-                sql = `
-                    SELECT
-                        (SELECT COURSE.course_name FROM COURSE WHERE COURSE.course_id = r.course_id) as course_name,
-                        (SELECT USER.user_name FROM USER WHERE USER.user_id = r.user_id) as user_name,
-                        r.course_record
-                    FROM
-                        COURSE c
-                        JOIN USER u ON u.user_id = c.user_id
-                        JOIN RECORD r ON r.course_id = c.course_id 
-                    WHERE
-                        u.user_id = ${user_id};
-                `;
-                db.all(sql, callback);
+                Promise.all([
+                    db_teacher
+                ]).then(res => {
+                    const [teacher] = res;
+                    callback(null, teacher);
+                }).catch(err => {
+                    callback(err, {});
+                });
                 break;
             case 3:
                 // student
-                db.all('SELECT course_id FROM COURSE', (err, list = []) => {
-                    if (err) return callback(err, {});
-                    let select = `
-                        SELECT
-                            u.user_id,
-                    `;
-                    list.forEach(item => {
-                        const [course_id] = Object.values(item);
-                        select += `
-                            MAX( CASE r.course_id WHEN ${course_id} THEN r.course_record ELSE '' END ) course_${course_id},
-                        `;
-                    });
-                    select += `
-                            SUM( r.course_record ) total
-                        FROM
-                            RECORD r
-                            JOIN USER u ON u.user_id = r.user_id 
-                        GROUP BY
-                            r.user_id
-                    `;
-                    const sql = `
-                        SELECT
-                            rank.*
-                        FROM
-                            (
-                                SELECT
-                                    ROW_NUMBER() OVER ( ORDER BY list.total DESC ) AS rank,
-                                    list.* 
-                                FROM
-                                    (${select}) list
-                            ) rank
-                        WHERE
-                            rank.user_id = ${user_id};
-                    `;
-                    db.get(sql, callback);
+                Promise.all([
+                    db_student
+                ]).then(res => {
+                    const [student] = res;
+                    callback(null, student);
+                }).catch(err => {
+                    callback(err, {});
                 });
                 break;
         }
