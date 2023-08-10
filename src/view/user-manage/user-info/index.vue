@@ -33,27 +33,50 @@
                 </template>
             </Form>
         </Card>
-        <Card class="section" :title="card_title">
-            <template v-if="list.length > 0">
-                <template v-if="user.access_id == 3">
-                    <Space style="margin-bottom: 16px" size="large" split type="flex">
-                        <span>总分: {{ total }}</span>
-                        <span>平均分: {{ average }}</span>
-                        <span>名次: {{ rank }}</span>
-                    </Space>
-                    <List border>
-                        <ListItem v-for="(item, index) in list" :key="index">
-                            {{ item.course_name }}: {{ item.course_record }}
-                        </ListItem>
-                    </List>
-                </template>
-                <template v-else>
-                    <DescriptionList v-for="(item, ci) in list" :key="ci" :title="item.course_name">
-                        <Description v-for="(student, si) in item.data" :key="si" :term="student.user_name + '：'">
-                            {{ student.course_record }}
-                        </Description>
-                    </DescriptionList>
-                </template>
+        <Card v-if="user.access_id == 2 || user.access_id == 1" class="section">
+            <template v-if="teacher.length">
+                <DescriptionList v-for="(t, ti) in teacher" :key="ti">
+                    <template #title>
+                        {{ t.course_name }} - 及格人数：{{ t.data.filter(it => Number(it.course_record) >= 60).length }}
+                    </template>
+                    <Description>
+                        <List>
+                            <ListItem v-for="(s, si) in t.data" :key="si">
+                                {{ s.user_name }}: {{ s.course_record || '-' }}
+                            </ListItem>
+                        </List>
+                    </Description>
+                </DescriptionList>
+            </template>
+            <template v-else>
+                <div>
+                    暂无数据
+                </div>
+            </template>
+        </Card>
+        <Card v-if="user.access_id == 3 || user.access_id == 1" class="section">
+            <template v-if="student.length">
+                <List>
+                    <ListItem v-for="(s, si) in student" :key="si">
+                        <DescriptionList>
+                            <template #title>
+                                <Space style="margin-bottom: 16px" size="large" split type="flex">
+                                    <span v-if="user.access_id == 1">姓名：{{ s.user_name }}</span>
+                                    <span>名次: {{ s.rank }}</span>
+                                    <span>总分: {{ s.total }}</span>
+                                    <span>平均分: {{ s.average }}</span>
+                                </Space>
+                            </template>
+                            <Description>
+                                <List>
+                                    <ListItem v-for="(r, ri) in s.record" :key="ri">
+                                        {{ r.course_name }}: {{ r.course_record || '-' }}
+                                    </ListItem>
+                                </List>
+                            </Description>
+                        </DescriptionList>
+                    </ListItem>
+                </List>
             </template>
             <template v-else>
                 <div>
@@ -119,7 +142,8 @@ export default {
                 user_name: true,
                 password: true
             },
-            list: [],
+            teacher: [],
+            student: [],
             total: 0,
             average: 0,
             rank: 0
@@ -224,26 +248,42 @@ export default {
             }).then(async (res) => {
                 const { code, data } = res;
                 if (code === 1) {
+                    const course_list = await this.queryCourse();
                     switch (access_id) {
-                        case 3:
-                            // student
-                            const { user_id, total, average, rank, ...course } = data;
-                            const course_list = await this.queryCourse();
-                            this.list = Object.keys(course).reduce((pre, cur) => {
-                                const course_id = cur.split("_")[1];
-                                const [item = {}] = course_list.filter(item => Number(item.course_id) === Number(course_id));
-                                pre.push({ course_name: item.course_name, course_record: course[cur] });
-                                return pre;
-                            }, []);
-                            this.total = total;
-                            this.average = Math.round(total / this.list.length * 100) / 100;
-                            this.rank = rank;
+                        case 1:
+                            const _course_names = []
+                            const _teacher = [];
+                            data.teacher.forEach(item => {
+                                const { course_name = null, user_name = null, course_record = null } = item;
+                                if (_course_names.includes(item.course_name)) {
+                                    const index = _course_names.indexOf(course_name);
+                                    _teacher[index].data.push({ user_name, course_record });
+                                }
+                                else {
+                                    _course_names.push(course_name);
+                                    _teacher.push({ course_name, data: [{ user_name, course_record }] });
+                                }
+                            });
+                            this.teacher = _teacher;
+
+                            this.student = data.student.map(student => {
+                                const { user_id, user_name, total, rank, ...course } = student;
+                                const record = Object.keys(course).reduce((pre, cur) => {
+                                    const course_id = cur.split("_")[1];
+                                    const [item = {}] = course_list.filter(item => Number(item.course_id) === Number(course_id));
+                                    pre.push({ course_name: item.course_name, course_record: course[cur] });
+                                    return pre;
+                                }, []);
+                                const average = Math.round(total / record.length * 100) / 100;
+                                return { user_name, total, average, rank, record }
+                            });
+                            console.log(this.student)
                             break;
                         case 2:
                             // teacher
                             let names = [];
                             let teacher = [];
-                            data.forEach(item => {
+                            data.filter(teacher => teacher.teacher_id == this.user.user_id).forEach(item => {
                                 const { course_name = null, user_name = null, course_record = null } = item;
                                 if (names.includes(item.course_name)) {
                                     const index = names.indexOf(course_name);
@@ -254,10 +294,23 @@ export default {
                                     teacher.push({ course_name, data: [{ user_name, course_record }] });
                                 }
                             });
-                            this.list = teacher;
+                            this.teacher = teacher;
+                            break;
+                        case 3:
+                            // student
+                            this.student = data.filter(student => student.user_id == this.user.user_id).map(student => {
+                                const { user_id, user_name, total, rank, ...course } = student;
+                                const record = Object.keys(course).reduce((pre, cur) => {
+                                    const course_id = cur.split("_")[1];
+                                    const [item = {}] = course_list.filter(item => Number(item.course_id) === Number(course_id));
+                                    pre.push({ course_name: item.course_name, course_record: course[cur] });
+                                    return pre;
+                                }, []);
+                                const average = Math.round(total / record.length * 100) / 100;
+                                return { user_name, total, average, rank, record }
+                            });
                             break;
                     }
-                    // this.list = list
                 }
                 else {
                     this.$Notice.error({

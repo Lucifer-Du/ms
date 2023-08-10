@@ -113,6 +113,7 @@ export default {
 :deep(.layout-content) {
     padding: 16px;
     height: 100%;
+    overflow-y: auto;
 }
 
 :deep(.operate) {

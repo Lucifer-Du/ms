@@ -126,6 +126,8 @@ class user {
                     (SELECT USER.user_id FROM USER WHERE USER.user_id = r.user_id) as user_id,
                     (SELECT USER.user_name FROM USER WHERE USER.user_id = r.user_id) as user_name,
                     (SELECT COURSE.course_name FROM COURSE WHERE COURSE.course_id = r.course_id) as course_name,
+                    (SELECT COURSE.user_id FROM COURSE WHERE COURSE.course_id = r.course_id) as teacher_id,
+                    r.course_id,
                     r.course_record
                 FROM
                     COURSE c
