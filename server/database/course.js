@@ -79,8 +79,18 @@ class course {
     };
     // 添加数据
     static create({ course_name = null, user_id = null }, callback) {
-        const sql = `INSERT INTO COURSE(course_name, user_id) VALUES('${course_name}', ${user_id});`;
-        db.run(sql, callback);
+        db.all(`SELECT * FROM COURSE WHERE course_name = '${course_name}';`, (error, list) => {
+            if (error) {
+                callback(error, {});
+            } else {
+                if (list.length) {
+                    callback(new Error(`该学科已存在`))
+                } else {
+                    const sql = `INSERT INTO COURSE(course_name, user_id) VALUES('${course_name}', ${user_id});`;
+                    db.run(sql, callback);
+                }
+            }
+        });
     }
     // 根据id 获取数据
     static find(id, callback) {

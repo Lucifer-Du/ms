@@ -68,7 +68,7 @@ export const routes = [
                 meta: {
                     title: '学科成绩',
                     requiresAuth: true,
-                    access: [2]
+                    access: [1, 2]
                 },
                 component: () => import('@/view/course-manage/course-record/list.vue')
             },

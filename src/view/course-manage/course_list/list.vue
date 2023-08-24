@@ -59,7 +59,7 @@ export default {
     },
     methods: {
         ...mapActions('app', ['handleQueryData']),
-        ...mapActions('user', ['handleEditCourse', 'handleDeleteCourse']),
+        ...mapActions('user', ['handleEditTableData', 'handleDeleteTableData']),
         getTableData: async function() {
             let params = {
                 page: this.page.current,

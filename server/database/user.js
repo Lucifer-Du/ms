@@ -94,16 +94,26 @@ class user {
         }).catch(err => {
             callback(err, {});
         });
-     };
+    };
     // 添加数据
     static create({ user_name = null, account = null, password = null, access_id = null }, callback) {
-        const sql = `INSERT INTO USER (user_name, account, password, access_id) VALUES ('${user_name}', '${account}', '${password}', ${access_id});`;
-        db.run(sql, callback);
+        db.all(`SELECT * FROM USER WHERE account = '${account}';`, (error, list) => {
+            if (error) {
+                callback(error, {});
+            } else {
+                if (list.length) {
+                    callback(new Error(`该账号已存在`))
+                } else {
+                    const sql = `INSERT INTO USER (user_name, account, password, access_id) VALUES ('${user_name}', '${account}', '${password}', ${access_id});`;
+                    db.run(sql, callback);
+                }
+            }
+        });
     }
     // 根据id 获取数据
     static find(id, callback) {
         if (!id) return callback(new Error(`缺少参数id`));
-    	const sql = `SELECT * FROM USER WHERE user_id = ${ id};`;
+    	const sql = `SELECT * FROM USER WHERE user_id = ${id};`;
         db.get(sql, callback);
     }
     // 更新数据

@@ -35,18 +35,18 @@
         </Card>
         <Card v-if="user.access_id == 2 || user.access_id == 1" class="section">
             <template v-if="teacher.length">
-                <DescriptionList v-for="(t, ti) in teacher" :key="ti">
-                    <template #title>
+                <Collapse>
+                    <Panel :name="t.course_id" v-for="(t, ti) in teacher" :key="ti">
                         {{ t.course_name }} - 及格人数：{{ t.data.filter(it => Number(it.course_record) >= 60).length }}
-                    </template>
-                    <Description>
-                        <List>
-                            <ListItem v-for="(s, si) in t.data" :key="si">
-                                {{ s.user_name }}: {{ s.course_record || '-' }}
-                            </ListItem>
-                        </List>
-                    </Description>
-                </DescriptionList>
+                        <template #content>
+                            <List>
+                                <ListItem v-for="(s, si) in t.data" :key="si">
+                                    {{ s.user_name }}: {{ s.course_record || '-' }}
+                                </ListItem>
+                            </List>
+                        </template>
+                    </Panel>
+                </Collapse>
             </template>
             <template v-else>
                 <div>
@@ -56,27 +56,23 @@
         </Card>
         <Card v-if="user.access_id == 3 || user.access_id == 1" class="section">
             <template v-if="student.length">
-                <List>
-                    <ListItem v-for="(s, si) in student" :key="si">
-                        <DescriptionList>
-                            <template #title>
-                                <Space style="margin-bottom: 16px" size="large" split type="flex">
-                                    <span v-if="user.access_id == 1">姓名：{{ s.user_name }}</span>
-                                    <span>名次: {{ s.rank }}</span>
-                                    <span>总分: {{ s.total }}</span>
-                                    <span>平均分: {{ s.average }}</span>
-                                </Space>
-                            </template>
-                            <Description>
-                                <List>
-                                    <ListItem v-for="(r, ri) in s.record" :key="ri">
-                                        {{ r.course_name }}: {{ r.course_record || '-' }}
-                                    </ListItem>
-                                </List>
-                            </Description>
-                        </DescriptionList>
-                    </ListItem>
-                </List>
+                <Collapse>
+                    <Panel :name="s.user_id" v-for="(s, si) in student" :key="si">
+                        <Space style="margin-bottom: 16px" size="large" split>
+                            <span v-if="user.access_id == 1">姓名：{{ s.user_name }}</span>
+                            <span>名次: {{ s.rank }}</span>
+                            <span>总分: {{ s.total }}</span>
+                            <span>平均分: {{ s.average }}</span>
+                        </Space>
+                        <template #content>
+                            <List>
+                                <ListItem v-for="(r, ri) in s.record" :key="ri">
+                                    {{ r.course_name }}: {{ r.course_record || '-' }}
+                                </ListItem>
+                            </List>
+                        </template>
+                    </Panel>
+                </Collapse>
             </template>
             <template v-else>
                 <div>
